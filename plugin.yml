@@ -19,5 +19,5 @@ configuration:
     sts-region:
       type: string
   required:
-    - login
+    - account-id
     - role
