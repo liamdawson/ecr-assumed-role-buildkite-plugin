@@ -9,7 +9,7 @@ main() {
   local duration="${AWS_ECR_ASSUMED_DURATION:-${BUILDKITE_PLUGIN_ECR_ASSUMED_ROLE_DURATION:-3600}}"
   local sts_region="${AWS_STS_REGION:-${BUILDKITE_PLUGIN_ECR_ASSUMED_ROLE_STS_REGION:-us-east-1}}"
 
-  local build="${AWS_ECR_ASSUMED_ROLE:-${BUILDKITE_PLUGIN_ECR_ASSUMED_ROLE_ROLE}}"
+  local build="build-${BUILDKITE_BUILD_NUMBER:-unknown}-job-${BUILDKITE_JOB_ID:-unknown}"
 
   # capture tab-separated credentials
   local raw_credentials; raw_credentials="$(env AWS_DEFAULT_REGION="${sts_region}" aws sts assume-role \
