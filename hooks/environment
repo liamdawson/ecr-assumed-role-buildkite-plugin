@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+set -eu -o pipefail
+
+main() {
+  local role="${AWS_ECR_ASSUMED_ROLE:-${BUILDKITE_PLUGIN_ECR_ASSUMED_ROLE_ROLE}}"
+  local account_id="${AWS_ECR_ACCOUNT_ID:-${BUILDKITE_PLUGIN_ECR_ASSUMED_ROLE_ACCOUNT_ID}}"
+  local region="${AWS_ECR_REGION:-${BUILDKITE_PLUGIN_ECR_ASSUMED_ROLE_REGION:-${AWS_DEFAULT_REGION}}}"
+  local duration="${AWS_ECR_ASSUMED_DURATION:-${BUILDKITE_PLUGIN_ECR_ASSUMED_ROLE_DURATION:-3600}}"
+  local sts_region="${AWS_STS_REGION:-${BUILDKITE_PLUGIN_ECR_ASSUMED_ROLE_STS_REGION:-us-east-1}}"
+
+  local build="${AWS_ECR_ASSUMED_ROLE:-${BUILDKITE_PLUGIN_ECR_ASSUMED_ROLE_ROLE}}"
+
+  # capture tab-separated credentials
+  local raw_credentials; raw_credentials="$(env AWS_DEFAULT_REGION="${sts_region}" aws sts assume-role \
+    --role-arn "$role" \
+    --role-session-name "ecr-assumed-role-plugin-${account_id}-${region}-${build}" \
+    --duration-seconds "$duration" \
+    --query '[Credentials.SessionToken, Credentials.AccessKeyId, Credentials.SecretAccessKey]' \
+    --output text)"
+
+  aws_session_token="$(echo "$raw_credentials" | awk -F $'\t' '{print $1;}')"
+  aws_access_key_id="$(echo "$raw_credentials" | awk -F $'\t' '{print $2;}')"
+  aws_secret_access_key="$(echo "$raw_credentials" | awk -F $'\t' '{print $3;}')"
+
+  local password
+  password="$(env \
+    AWS_SESSION_TOKEN="${aws_session_token}" \
+    AWS_ACCESS_KEY_ID="${aws_access_key_id}" \
+    AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}" \
+    aws --region "$region" ecr get-login-password)"
+
+  docker login \
+    --username AWS \
+    --password-stdin "${account_id}.dkr.ecr.${region}.amazonaws.com" <<< "$password"
+}
+
+main

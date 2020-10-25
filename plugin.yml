@@ -1,0 +1,23 @@
+name: ECR
+description: Login to ECR (using an assumed role) in your build steps
+author: https://github.com/liamdawson
+requirements:
+  - awk
+  - bash
+  - aws
+  - docker
+configuration:
+  properties:
+    role:
+      type: string
+    account-id:
+      type: string
+    region:
+      type: string
+    duration:
+      type: string
+    sts-region:
+      type: string
+  required:
+    - login
+    - role
